@@ -135,15 +135,19 @@ router.post('/', validateBooking, asyncHandler(async (req: Request, res: Respons
   });
 
   const result = createBooking();
+  
   if ('conflicts' in result) {
+    const alternatives = result.alternatives ?? [];
+
     res.status(409).json({
       error: 'Booking conflict detected',
       conflicts: result.conflicts,
-      alternatives: result.alternatives,
-      message: `This equipment is already booked during ${start_time}–${end_time}. ${result.alternatives.length} alternative(s) found.`,
+      alternatives,
+      message: `This equipment is already booked during ${start_time}–${end_time}. ${alternatives.length} alternative(s) found.`,
     });
     return;
   }
+
   res.status(201).json({
     booking: result.booking,
     requires_approval: result.requiresApproval,

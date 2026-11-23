@@ -1,0 +1,17 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/lablink', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/lablink']
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'lablink'
+      - '--image=gcr.io/$PROJECT_ID/lablink'
+      - '--platform=managed'
+      - '--region=us-central1'
+      - '--allow-unauthenticated'
+      - '--memory=512Mi'
+      - '--cpu=1'

@@ -64,10 +64,11 @@ export default function BookingForm({
       {/* Step 1: Equipment Selection */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-4">
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+          <label htmlFor="booking-equipment" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
             Select Lab Equipment
           </label>
           <select
+            id="booking-equipment"
             value={equipmentId}
             onChange={(e) => setEquipmentId(e.target.value)}
             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 font-medium focus:ring-2 focus:ring-indigo-300 focus:outline-none"
@@ -127,10 +128,11 @@ export default function BookingForm({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+            <label htmlFor="booking-priority" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
               Priority Level
             </label>
             <select
+              id="booking-priority"
               value={priority}
               onChange={(e) => setPriority(e.target.value as any)}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 font-medium focus:ring-2 focus:ring-indigo-300 focus:outline-none"
@@ -143,10 +145,11 @@ export default function BookingForm({
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+            <label htmlFor="booking-purpose" className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
               Work Session Purpose
             </label>
             <input
+              id="booking-purpose"
               type="text"
               placeholder="e.g. Model inference benchmark or prototyping"
               value={purpose}

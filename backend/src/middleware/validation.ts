@@ -11,17 +11,17 @@ export function handleValidationErrors(req: Request, res: Response, next: NextFu
 }
 
 export const validateBooking = [
-  body('equipment_id').notEmpty().withMessage('equipment_id is required'),
-  body('student_id').notEmpty().withMessage('student_id is required'),
-  body('start_time').notEmpty().isISO8601().withMessage('start_time must be a valid ISO 8601 datetime'),
-  body('end_time').notEmpty().isISO8601().withMessage('end_time must be a valid ISO 8601 datetime'),
-  body('purpose').notEmpty().withMessage('purpose is required'),
+  body('equipment_id').isString().trim().notEmpty().isLength({ max: 100 }).withMessage('equipment_id is required'),
+  body('student_id').isString().trim().notEmpty().isLength({ max: 100 }).withMessage('student_id is required'),
+  body('start_time').isString().notEmpty().isISO8601({ strict: true }).withMessage('start_time must be a valid ISO 8601 datetime'),
+  body('end_time').isString().notEmpty().isISO8601({ strict: true }).withMessage('end_time must be a valid ISO 8601 datetime'),
+  body('purpose').isString().trim().notEmpty().isLength({ max: 1000 }).withMessage('purpose is required'),
   body('priority').optional().isIn(['low', 'normal', 'high', 'critical']).withMessage('priority must be low|normal|high|critical'),
   handleValidationErrors,
 ];
 
 export const validateProject = [
-  body('student_id').notEmpty().withMessage('student_id is required'),
+  body('student_id').isString().trim().notEmpty().isLength({ max: 100 }).withMessage('student_id is required'),
   body('title').notEmpty().withMessage('title is required'),
   body('department').notEmpty().withMessage('department is required'),
   body('deadline').notEmpty().isISO8601().withMessage('deadline must be a valid ISO 8601 date'),
@@ -29,11 +29,11 @@ export const validateProject = [
 ];
 
 export const validateSchedulingRequest = [
-  body('equipment_id').notEmpty().withMessage('equipment_id is required'),
-  body('student_id').notEmpty().withMessage('student_id is required'),
+  body('equipment_id').isString().trim().notEmpty().isLength({ max: 100 }).withMessage('equipment_id is required'),
+  body('student_id').isString().trim().notEmpty().isLength({ max: 100 }).withMessage('student_id is required'),
   body('requested_start').notEmpty().isISO8601().withMessage('requested_start must be valid ISO 8601'),
   body('requested_end').notEmpty().isISO8601().withMessage('requested_end must be valid ISO 8601'),
-  body('purpose').notEmpty().withMessage('purpose is required'),
+  body('purpose').isString().trim().notEmpty().isLength({ max: 1000 }).withMessage('purpose is required'),
   handleValidationErrors,
 ];
 

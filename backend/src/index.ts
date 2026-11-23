@@ -17,9 +17,31 @@ import projectsRoutes from './routes/projects';
 
 const app = express();
 
+app.disable('x-powered-by');
 app.use(helmet({ crossOriginResourcePolicy: false }));
-app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] }));
-app.use(express.json());
+
+// In production, explicitly list the deployed frontend origin(s), comma-separated.
+// Same-origin requests do not need CORS; local Vite origins remain available in development.
+const allowedOrigins = new Set(
+  (process.env.FRONTEND_ORIGIN ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.add('http://localhost:5173');
+  allowedOrigins.add('http://127.0.0.1:5173');
+}
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(new Error('Origin not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  maxAge: 600,
+}));
+app.use(express.json({ limit: '100kb', strict: true }));
 
 // Normalization middleware: maps camelCase to snake_case for body fields
 app.use((req, _res, next) => {
@@ -63,6 +85,10 @@ app.get('/health', (_req, res) => {
 
 // Demo Data Reset Endpoint
 app.post('/api/reset-demo', (_req, res) => {
+  if (process.env.NODE_ENV === 'production' && process.env.ENABLE_DEMO_RESET !== 'true') {
+    res.status(404).json({ error: 'Not found' });
+    return;
+  }
   try {
     seedDatabase();
     res.json({

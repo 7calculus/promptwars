@@ -88,4 +88,37 @@ describe('Bookings API Integration Tests', () => {
       expect(b.student_id).toBe('st-001');
     }
   });
+
+  test('rejects a booking whose end time is not after its start time', async () => {
+    const res = await request(app)
+      .post('/api/bookings')
+      .send({
+        equipment_id: 'eq-002',
+        student_id: 'st-001',
+        start_time: '2026-11-28T11:00:00Z',
+        end_time: '2026-11-28T09:00:00Z',
+        purpose: 'Invalid interval',
+        priority: 'normal',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/start_time before end_time/i);
+  });
+
+  test('rejects bookings that have already ended', async () => {
+    const res = await request(app)
+      .post('/api/bookings')
+      .send({
+        equipment_id: 'eq-002',
+        student_id: 'st-001',
+        start_time: '2020-01-01T09:00:00Z',
+        end_time: '2020-01-01T11:00:00Z',
+        purpose: 'Past booking',
+        priority: 'normal',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/future/i);
+  });
+
 });

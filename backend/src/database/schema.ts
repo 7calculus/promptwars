@@ -107,6 +107,16 @@ export function createTables(): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  // Keep conflict lookups fast as booking history grows.
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_bookings_equipment_status_time
+    ON bookings (equipment_id, status, start_time, end_time);
+    CREATE INDEX IF NOT EXISTS idx_bookings_student_created
+    ON bookings (student_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_requests_status_created
+    ON requests (status, created_at DESC);
+  `);
 }
 
 createTables();

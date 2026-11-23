@@ -1,7 +1,12 @@
 import axios from 'axios';
 import type { AlternativeSlot } from '../types';
 
-const api = axios.create({ baseURL: '/api', timeout: 10000 });
+// Set VITE_API_URL to the deployed backend origin when frontend and API are
+// hosted separately (for example, https://lablink-api.onrender.com/api).
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+  timeout: 10000,
+});
 
 /** Lets the app know whether the backend is reachable (drives the OFFLINE chip + demo mode). */
 type ConnectivityListener = (offline: boolean) => void;

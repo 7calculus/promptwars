@@ -13,7 +13,8 @@ export default function SearchBar({ value, onChange, placeholder = 'Search…', 
     <div className={`relative ${className}`}>
       <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
       <input
-        type="text"
+        type="search"
+        aria-label="Search equipment and resources"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

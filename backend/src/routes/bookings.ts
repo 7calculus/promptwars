@@ -54,8 +54,14 @@ router.post('/', validateBooking, asyncHandler(async (req: Request, res: Respons
   };
 
   // Validate start < end
-  if (new Date(start_time) >= new Date(end_time)) {
-    res.status(400).json({ error: 'start_time must be before end_time' });
+  const startMs = Date.parse(start_time);
+  const endMs = Date.parse(end_time);
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || startMs >= endMs) {
+    res.status(400).json({ error: 'A valid start_time before end_time is required' });
+    return;
+  }
+  if (endMs <= Date.now()) {
+    res.status(400).json({ error: 'Bookings must end in the future' });
     return;
   }
 
@@ -66,66 +72,83 @@ router.post('/', validateBooking, asyncHandler(async (req: Request, res: Respons
     res.status(409).json({ error: 'Equipment is currently under maintenance' });
     return;
   }
-
-  // Run conflict detection
-  const conflicts = schedulingEngine.findConflicts(equipment_id, start_time, end_time);
-  if (conflicts.length > 0) {
-    const alternatives = schedulingEngine.generateAlternatives({
-      equipment_id, student_id, project_id, requested_start: start_time,
-      requested_end: end_time, purpose, priority: priority as 'low' | 'normal' | 'high' | 'critical',
-    });
-    res.status(409).json({
-      error: 'Booking conflict detected',
-      conflicts,
-      alternatives,
-      message: `This equipment is already booked during ${start_time}–${end_time}. ${alternatives.length} alternative(s) found.`,
-    });
+  if ((endMs - startMs) / 60000 > equipment.max_duration) {
+    res.status(400).json({ error: `Booking exceeds the maximum duration of ${equipment.max_duration} minutes` });
     return;
   }
 
-  const bookingId = `bk-${uuidv4().slice(0, 8)}`;
-  const now = new Date().toISOString();
-  const requiresApproval = Boolean(equipment.requires_approval);
-  const bookingStatus = requiresApproval ? 'pending' : 'approved';
+  // Make conflict detection and insertion atomic so simultaneous requests cannot
+  // both reserve the same equipment/time window.
+  const createBooking = db.transaction(() => {
+    const conflicts = schedulingEngine.findConflicts(equipment_id, start_time, end_time);
+    if (conflicts.length > 0) {
+      const alternatives = schedulingEngine.generateAlternatives({
+        equipment_id, student_id, project_id, requested_start: start_time,
+        requested_end: end_time, purpose, priority: priority as 'low' | 'normal' | 'high' | 'critical',
+      });
+      return { conflicts, alternatives } as const;
+    }
 
-  db.prepare(`
-    INSERT INTO bookings (id, equipment_id, student_id, project_id, start_time, end_time, status, purpose, priority, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(bookingId, equipment_id, student_id, project_id ?? null, start_time, end_time, bookingStatus, purpose, priority, now, now);
+    const bookingId = `bk-${uuidv4().slice(0, 8)}`;
+    const now = new Date().toISOString();
+    const requiresApproval = Boolean(equipment.requires_approval);
+    const bookingStatus = requiresApproval ? 'pending' : 'approved';
 
-  // If approval required, create a request
-  if (requiresApproval) {
-    const reqId = `req-${uuidv4().slice(0, 8)}`;
     db.prepare(`
-      INSERT INTO requests (id, booking_id, faculty_id, status, notes, created_at, updated_at)
-      VALUES (?, ?, NULL, 'pending', ?, ?, ?)
-    `).run(reqId, bookingId, `Booking for ${equipment.name} requires faculty approval.`, now, now);
+      INSERT INTO bookings (id, equipment_id, student_id, project_id, start_time, end_time, status, purpose, priority, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(bookingId, equipment_id, student_id, project_id ?? null, start_time, end_time, bookingStatus, purpose, priority, now, now);
+
+    if (requiresApproval) {
+      const reqId = `req-${uuidv4().slice(0, 8)}`;
+      db.prepare(`
+        INSERT INTO requests (id, booking_id, faculty_id, status, notes, created_at, updated_at)
+        VALUES (?, ?, NULL, 'pending', ?, ?, ?)
+      `).run(reqId, bookingId, `Booking for ${equipment.name} requires faculty approval.`, now, now);
+    }
+
+    const notifId = `notif-${uuidv4().slice(0, 8)}`;
+    const notifTitle = requiresApproval ? 'Booking Submitted — Pending Approval' : 'Booking Confirmed';
+    const notifMsg = requiresApproval
+      ? `Your booking for ${equipment.name} on ${start_time} is pending faculty approval.`
+      : `Your booking for ${equipment.name} on ${start_time} has been confirmed.`;
+    db.prepare(`
+      INSERT INTO notifications (id, user_id, user_type, title, message, type, related_id, created_at)
+      VALUES (?, ?, 'student', ?, ?, ?, ?, ?)
+    `).run(notifId, student_id, notifTitle, notifMsg, requiresApproval ? 'request_pending' : 'booking_created', bookingId, now);
+
+    const row = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId) as any;
+    return {
+      booking: {
+        ...row,
+        equipmentId: row.equipment_id,
+        equipmentName: equipment.name,
+        studentId: row.student_id,
+        projectId: row.project_id,
+        startTime: row.start_time,
+        endTime: row.end_time,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      },
+      requiresApproval,
+    } as const;
+  });
+
+  const result = createBooking();
+  if ('conflicts' in result) {
+    res.status(409).json({
+      error: 'Booking conflict detected',
+      conflicts: result.conflicts,
+      alternatives: result.alternatives,
+      message: `This equipment is already booked during ${start_time}–${end_time}. ${result.alternatives.length} alternative(s) found.`,
+    });
+    return;
   }
-
-  // Create notification
-  const notifId = `notif-${uuidv4().slice(0, 8)}`;
-  const notifTitle = requiresApproval ? 'Booking Submitted — Pending Approval' : 'Booking Confirmed';
-  const notifMsg = requiresApproval
-    ? `Your booking for ${equipment.name} on ${start_time} is pending faculty approval.`
-    : `Your booking for ${equipment.name} on ${start_time} has been confirmed.`;
-  db.prepare(`
-    INSERT INTO notifications (id, user_id, user_type, title, message, type, related_id, created_at)
-    VALUES (?, ?, 'student', ?, ?, ?, ?, ?)
-  `).run(notifId, student_id, notifTitle, notifMsg, requiresApproval ? 'request_pending' : 'booking_created', bookingId, now);
-
-  const row = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId) as any;
-  const booking = {
-    ...row,
-    equipmentId: row.equipment_id,
-    equipmentName: equipment.name,
-    studentId: row.student_id,
-    projectId: row.project_id,
-    startTime: row.start_time,
-    endTime: row.end_time,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-  res.status(201).json({ booking, requires_approval: requiresApproval, requiresApproval });
+  res.status(201).json({
+    booking: result.booking,
+    requires_approval: result.requiresApproval,
+    requiresApproval: result.requiresApproval,
+  });
 }));
 
 // PUT /api/bookings/:id

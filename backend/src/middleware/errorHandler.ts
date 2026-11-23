@@ -12,13 +12,14 @@ export function errorHandler(
   _next: NextFunction
 ): void {
   const statusCode = err.statusCode ?? 500;
-  const message = err.message ?? 'Internal Server Error';
+  const isServerError = statusCode >= 500;
+  const message = isServerError ? 'Internal Server Error' : (err.message ?? 'Request failed');
 
-  console.error(`[ERROR] ${statusCode} — ${message}`, err.details ?? '');
-
+  // Keep implementation details in server logs, never in public API responses.
+  console.error(`[ERROR] ${statusCode} — ${err.message ?? 'Unknown error'}`, err.stack ?? '');
   res.status(statusCode).json({
     error: message,
-    ...(err.details !== undefined ? { details: err.details } : {}),
+    ...(!isServerError && err.details !== undefined ? { details: err.details } : {}),
   });
 }
 

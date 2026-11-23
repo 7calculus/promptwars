@@ -35,8 +35,12 @@ export default function Dashboard() {
       if (res.data) setOverview(res.data);
     }).catch(() => {});
 
-    bookingsAPI.getAll().then((res) => {
-      if (res.data && res.data.length > 0) setRecentBookings(res.data.slice(0, 5));
+    const filters: Record<string, string> = {};
+    if (currentPersona.role === 'student' && currentPersona.studentId) {
+      filters.studentId = currentPersona.studentId;
+    }
+    bookingsAPI.getAll(filters).then((res) => {
+      setRecentBookings(res.data.slice(0, 5));
     }).catch(() => {});
 
     equipmentAPI.getAll().then((res) => {
@@ -45,7 +49,7 @@ export default function Dashboard() {
         setTopEquipment(sorted.slice(0, 5));
       }
     }).catch(() => {});
-  }, []);
+  }, [currentPersona]);
 
   const summaryCards = [
     {
@@ -88,7 +92,7 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-            Good day, {currentPersona.name.split(' ')[0]} 👋
+            Welcome back, <span className="neon-text">{currentPersona.name.split(' ')[0]}</span>
           </h1>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
             {format(new Date(), 'EEEE, MMMM d, yyyy')} • Campus Laboratory Hub

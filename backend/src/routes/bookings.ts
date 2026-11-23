@@ -14,10 +14,11 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
 
   let sql = `
     SELECT b.*, e.name as equipment_name, e.category, e.lab,
-           s.name as student_name
+           s.name as student_name, p.title as project_title
     FROM bookings b
     JOIN equipment e ON b.equipment_id = e.id
-    JOIN students s ON b.student_id = s.id
+    LEFT JOIN students s ON b.student_id = s.id
+    LEFT JOIN projects p ON b.project_id = p.id
     WHERE 1=1
   `;
   const params: string[] = [];
@@ -26,7 +27,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   if (status)      { sql += ' AND b.status = ?';        params.push(status); }
   if (equipmentId) { sql += ' AND b.equipment_id = ?';  params.push(equipmentId); }
 
-  sql += ' ORDER BY b.start_time DESC';
+  sql += ' ORDER BY b.created_at DESC, b.start_time DESC';
 
   const rows = db.prepare(sql).all(...params) as any[];
   const bookings = rows.map((b) => ({
@@ -36,6 +37,7 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     studentId: b.student_id,
     studentName: b.student_name,
     projectId: b.project_id,
+    projectTitle: b.project_title,
     startTime: b.start_time,
     endTime: b.end_time,
     createdAt: b.created_at,
@@ -111,8 +113,19 @@ router.post('/', validateBooking, asyncHandler(async (req: Request, res: Respons
     VALUES (?, ?, 'student', ?, ?, ?, ?, ?)
   `).run(notifId, student_id, notifTitle, notifMsg, requiresApproval ? 'request_pending' : 'booking_created', bookingId, now);
 
-  const booking = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId) as Booking;
-  res.status(201).json({ booking, requires_approval: requiresApproval });
+  const row = db.prepare('SELECT * FROM bookings WHERE id = ?').get(bookingId) as any;
+  const booking = {
+    ...row,
+    equipmentId: row.equipment_id,
+    equipmentName: equipment.name,
+    studentId: row.student_id,
+    projectId: row.project_id,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+  res.status(201).json({ booking, requires_approval: requiresApproval, requiresApproval });
 }));
 
 // PUT /api/bookings/:id

@@ -42,7 +42,21 @@ function MainAppContent() {
 
   return (
     <Layout>
-      <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3500,
+          style: {
+            background: '#0e0e11',
+            color: '#ececf0',
+            border: '1px solid rgba(255,106,0,0.5)',
+            boxShadow: '0 0 24px rgba(255,106,0,0.25)',
+            fontSize: '13px',
+          },
+          success: { iconTheme: { primary: '#ff6a00', secondary: '#000' } },
+          error: { iconTheme: { primary: '#ef4444', secondary: '#000' } },
+        }}
+      />
       {renderPage()}
     </Layout>
   );

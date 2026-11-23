@@ -37,14 +37,14 @@ export default function LineChart({ data = DEFAULT_TRENDS, height = 280 }: LineC
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
         <RechartsLineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#64748b' }} />
-          <YAxis tick={{ fontSize: 12, fill: '#64748b' }} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#26262b" />
+          <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#9a9aa4' }} />
+          <YAxis tick={{ fontSize: 12, fill: '#9a9aa4' }} />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#ffffff',
+              backgroundColor: '#0e0e11', color: '#ececf0',
               borderRadius: '12px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid #6b3208',
               fontSize: '12px',
             }}
           />
@@ -57,27 +57,27 @@ export default function LineChart({ data = DEFAULT_TRENDS, height = 280 }: LineC
           <Line
             type="monotone"
             dataKey="bookings"
-            stroke="#6366f1"
+            stroke="#ff6a00"
             strokeWidth={3}
-            dot={{ r: 4, fill: '#6366f1' }}
+            dot={{ r: 4, fill: '#ff6a00' }}
             activeDot={{ r: 6 }}
             name="Bookings"
           />
           <Line
             type="monotone"
             dataKey="approvals"
-            stroke="#10b981"
+            stroke="#ffc233"
             strokeWidth={2}
             strokeDasharray="4 4"
-            dot={{ r: 3, fill: '#10b981' }}
+            dot={{ r: 3, fill: '#ffc233' }}
             name="Approvals"
           />
           <Line
             type="monotone"
             dataKey="conflicts"
-            stroke="#f97316"
+            stroke="#ef4444"
             strokeWidth={2}
-            dot={{ r: 3, fill: '#f97316' }}
+            dot={{ r: 3, fill: '#ef4444' }}
             name="Conflicts"
           />
         </RechartsLineChart>

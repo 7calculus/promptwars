@@ -38,6 +38,14 @@ app.use((req, _res, next) => {
       const end = new Date(start.getTime() + durationMin * 60 * 1000);
       req.body.requested_end = end.toISOString();
     }
+    // Frontend labels "medium"; the database/validation use "normal"
+    if (req.body.priority === 'medium') req.body.priority = 'normal';
+    // Approvals: accept `reason` as an alias of `notes`, and `slot` as `suggested_slot`
+    if (req.body.reason && !req.body.notes) req.body.notes = req.body.reason;
+    if (req.body.slot && !req.body.suggested_slot) {
+      const sl = req.body.slot;
+      req.body.suggested_slot = { start_time: sl.start_time ?? sl.startTime, end_time: sl.end_time ?? sl.endTime };
+    }
     if (!req.body.purpose && req.path.includes('/bookings')) req.body.purpose = 'Laboratory resource reservation';
     if (!req.body.purpose && req.path.includes('/recommend')) req.body.purpose = 'Laboratory scheduling request';
   }

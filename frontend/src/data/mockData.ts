@@ -466,12 +466,12 @@ export const PEAK_HOURS_DATA = Array.from({ length: 7 }, (_, dayIdx) =>
 );
 
 export const CATEGORY_GRADIENTS: Record<string, string> = {
-  Computing: 'from-indigo-500 to-purple-600',
-  'AI-ML': 'from-violet-500 to-pink-500',
-  Electronics: 'from-cyan-500 to-blue-500',
-  '3D-Printing': 'from-orange-400 to-pink-500',
-  Robotics: 'from-emerald-500 to-cyan-500',
-  IoT: 'from-teal-400 to-green-500',
-  Research: 'from-amber-400 to-orange-500',
-  Mechanical: 'from-slate-500 to-gray-600',
+  Computing: 'from-orange-500 to-red-600',
+  'AI-ML': 'from-amber-400 to-orange-600',
+  Electronics: 'from-yellow-400 to-orange-500',
+  '3D-Printing': 'from-orange-400 to-rose-600',
+  Robotics: 'from-orange-600 to-amber-500',
+  IoT: 'from-amber-500 to-red-500',
+  Research: 'from-yellow-500 to-amber-700',
+  Mechanical: 'from-neutral-600 to-orange-700',
 };

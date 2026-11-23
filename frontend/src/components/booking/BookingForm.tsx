@@ -10,7 +10,7 @@ interface BookingFormData {
   date: Date;
   timeSlot: string;
   purpose: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: 'low' | 'normal' | 'high' | 'critical';
 }
 
 interface BookingFormProps {
@@ -33,7 +33,7 @@ export default function BookingForm({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlot, setSelectedSlot] = useState<string | null>('10:00 - 12:00');
   const [purpose, setPurpose] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
+  const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'critical'>('normal');
 
   const selectedEquipment = equipmentList.find((e) => e.id === equipmentId);
 
@@ -127,7 +127,7 @@ export default function BookingForm({
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 font-medium focus:ring-2 focus:ring-indigo-300 focus:outline-none"
             >
               <option value="low">Low Priority</option>
-              <option value="medium">Medium Priority</option>
+              <option value="normal">Medium Priority</option>
               <option value="high">High Priority</option>
               <option value="critical">Critical (Imminent Deadline)</option>
             </select>

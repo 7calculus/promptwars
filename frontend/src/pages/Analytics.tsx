@@ -154,7 +154,7 @@ export default function Analytics() {
       </div>
 
       {/* Row 5: AI Insights Panel for Lab Admin */}
-      <div className="bg-gradient-to-r from-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-md">
+      <div className="bg-gradient-to-r from-orange-950 via-black to-black border border-orange-500/30 rounded-2xl p-6 text-white shadow-[0_0_40px_-10px_rgba(255,106,0,0.45)]">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles size={18} className="text-violet-400" />
           <h3 className="text-base font-bold">Autonomous Facility Recommendations</h3>
@@ -162,19 +162,19 @@ export default function Analytics() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           <div className="p-3.5 bg-white/10 rounded-xl border border-white/10">
             <p className="font-bold text-indigo-200">Rebalance GPU Compute Node</p>
-            <p className="text-slate-300 mt-1 leading-relaxed">
+            <p className="text-neutral-300 mt-1 leading-relaxed">
               DGX A100 is exceeding 90% contention. Routing queued inference jobs to RTX 4090 will reduce queue latency by 45%.
             </p>
           </div>
           <div className="p-3.5 bg-white/10 rounded-xl border border-white/10">
             <p className="font-bold text-emerald-200">Preventative Maintenance Window</p>
-            <p className="text-slate-300 mt-1 leading-relaxed">
+            <p className="text-neutral-300 mt-1 leading-relaxed">
               Tektronix Oscilloscope scheduled for recalibration during Sunday low-utilization window (02:00–06:00).
             </p>
           </div>
           <div className="p-3.5 bg-white/10 rounded-xl border border-white/10">
             <p className="font-bold text-cyan-200">High-Impact Research Prioritization</p>
-            <p className="text-slate-300 mt-1 leading-relaxed">
+            <p className="text-neutral-300 mt-1 leading-relaxed">
               Senior capstone teams with &lt;14 day deadlines have been automatically given reservation priority.
             </p>
           </div>

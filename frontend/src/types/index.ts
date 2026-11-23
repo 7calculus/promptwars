@@ -76,7 +76,7 @@ export interface Booking {
   endTime: string;
   status: BookingStatus;
   purpose: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: 'low' | 'normal' | 'medium' | 'high' | 'critical';
   createdAt: string;
   updatedAt: string;
 }
@@ -90,6 +90,11 @@ export interface LabRequest {
   status: RequestStatus;
   notes?: string;
   suggestedSlot?: AlternativeSlot;
+  studentName?: string;
+  studentDepartment?: string;
+  priority?: string;
+  startTime?: string;
+  endTime?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -131,7 +136,7 @@ export interface SchedulingRequest {
   preferredStartTime: string;
   duration: number;
   projectId?: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+  priority: 'low' | 'normal' | 'medium' | 'high' | 'critical';
   deadline?: string;
 }
 

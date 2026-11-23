@@ -56,7 +56,8 @@ export default function TopBar() {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200/80 px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 shadow-xs">
+    <header className="h-16 bg-[#050505]/75 backdrop-blur-xl border-b border-orange-500/20 px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 relative">
+      <div className="hud-line absolute left-0 right-0 bottom-0" />
       {/* Mobile Toggle & Brand */}
       <div className="flex items-center gap-3">
         <button
@@ -67,7 +68,7 @@ export default function TopBar() {
         </button>
 
         <div className="hidden sm:flex items-center gap-2">
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center gap-1.5">
+          <span className="text-xs font-semibold px-2.5 py-1 rounded bg-orange-500/10 text-orange-300 border border-orange-500/40 flex items-center gap-1.5 font-mono uppercase tracking-wider">
             <Sparkles size={12} className="text-indigo-600" />
             Active Role:
           </span>

@@ -16,8 +16,8 @@ interface DonutChartProps {
 
 const DEFAULT_DATA: DonutData[] = [
   { name: 'Available', value: 11, color: '#10b981' }, // emerald-500
-  { name: 'In Use', value: 4, color: '#f97316' },     // orange-500
-  { name: 'Reserved', value: 3, color: '#3b82f6' },   // blue-500
+  { name: 'In Use', value: 4, color: '#ff6a00' },     // brand orange
+  { name: 'Reserved', value: 3, color: '#ffc233' },   // amber
   { name: 'Maintenance', value: 2, color: '#ef4444' } // red-500
 ];
 
@@ -57,10 +57,10 @@ export default function DonutChart({
             <Tooltip
               formatter={(value: any, name: any) => [`${value} units`, name]}
               contentStyle={{
-                backgroundColor: '#ffffff',
+                backgroundColor: '#0e0e11', color: '#ececf0',
                 borderRadius: '12px',
                 boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                border: '1px solid #e2e8f0',
+                border: '1px solid #6b3208',
                 fontSize: '12px',
               }}
             />

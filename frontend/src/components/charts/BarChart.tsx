@@ -48,29 +48,29 @@ export default function BarChart({
             layout="vertical"
             margin={{ top: 5, right: 30, left: 70, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#26262b" />
             <XAxis
               type="number"
               domain={[0, 100]}
-              tick={{ fontSize: 11, fill: '#64748b' }}
+              tick={{ fontSize: 11, fill: '#9a9aa4' }}
               unit="%"
             />
             <YAxis
               type="category"
               dataKey="name"
-              tick={{ fontSize: 11, fill: '#334155' }}
+              tick={{ fontSize: 11, fill: '#d4d4dc' }}
               width={100}
             />
             <Tooltip
               formatter={(value: any) => [`${value}% Utilization`, 'Rate']}
               contentStyle={{
-                backgroundColor: '#ffffff',
+                backgroundColor: '#0e0e11', color: '#ececf0',
                 borderRadius: '12px',
-                border: '1px solid #e2e8f0',
+                border: '1px solid #6b3208',
                 fontSize: '12px',
               }}
             />
-            <Bar dataKey="utilization" fill="#6366f1" radius={[0, 6, 6, 0]} barSize={16} />
+            <Bar dataKey="utilization" fill="#ff6a00" radius={[0, 6, 6, 0]} barSize={16} />
           </RechartsBarChart>
         </ResponsiveContainer>
       </div>
@@ -81,28 +81,28 @@ export default function BarChart({
     <div style={{ width: '100%', height }}>
       <ResponsiveContainer width="100%" height="100%">
         <RechartsBarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#26262b" />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 10, fill: '#64748b' }}
+            tick={{ fontSize: 10, fill: '#9a9aa4' }}
             angle={-25}
             textAnchor="end"
           />
           <YAxis
             domain={[0, 100]}
-            tick={{ fontSize: 11, fill: '#64748b' }}
+            tick={{ fontSize: 11, fill: '#9a9aa4' }}
             unit="%"
           />
           <Tooltip
             formatter={(value: any) => [`${value}%`, 'Utilization']}
             contentStyle={{
-              backgroundColor: '#ffffff',
+              backgroundColor: '#0e0e11', color: '#ececf0',
               borderRadius: '12px',
-              border: '1px solid #e2e8f0',
+              border: '1px solid #6b3208',
               fontSize: '12px',
             }}
           />
-          <Bar dataKey="utilization" fill="#6366f1" radius={[6, 6, 0, 0]} barSize={24} />
+          <Bar dataKey="utilization" fill="#ff6a00" radius={[6, 6, 0, 0]} barSize={24} />
         </RechartsBarChart>
       </ResponsiveContainer>
     </div>

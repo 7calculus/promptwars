@@ -50,12 +50,11 @@ export default function AlternativeCard({
             <h4 className="font-bold text-slate-800 text-base leading-tight">
               {alternative.equipmentName}
             </h4>
-            <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500">
+            <div className="flex flex-col gap-1 mt-1.5 text-xs text-slate-500">
               <span className="flex items-center gap-1">
                 <Calendar size={13} className="text-slate-400" />
                 {formattedDate}
               </span>
-              <span>•</span>
               <span className="flex items-center gap-1">
                 <Clock size={13} className="text-slate-400" />
                 {formattedTime}

@@ -23,14 +23,20 @@ export class SchedulingEngine {
    * Find conflicting bookings (approved or pending) for the given equipment & time window.
    */
   findConflicts(equipmentId: string, startTime: string, endTime: string): Booking[] {
+    // Compare real instants, not strings: stored values can be naive local
+    // strings (seed data) or UTC "Z" strings (API), which don't sort together.
+    const reqStart = new Date(startTime).getTime();
+    const reqEnd = new Date(endTime).getTime();
     const rows = db.prepare(`
       SELECT * FROM bookings
       WHERE equipment_id = ?
         AND status IN ('approved', 'pending')
-        AND start_time < ?
-        AND end_time > ?
-    `).all(equipmentId, endTime, startTime) as Booking[];
-    return rows;
+    `).all(equipmentId) as Booking[];
+    return rows.filter((b) => {
+      const s = new Date(b.start_time).getTime();
+      const e = new Date(b.end_time).getTime();
+      return s < reqEnd && e > reqStart;
+    });
   }
 
   /**

@@ -20,6 +20,7 @@ export default function BookingCard({ booking, onCancel, onView }: BookingCardPr
   const priorityColors = {
     low: 'text-slate-500 bg-slate-50',
     medium: 'text-blue-600 bg-blue-50',
+    normal: 'text-blue-600 bg-blue-50',
     high: 'text-orange-600 bg-orange-50',
     critical: 'text-red-600 bg-red-50',
   };

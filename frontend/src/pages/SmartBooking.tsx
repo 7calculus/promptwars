@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import BookingForm from '../components/booking/BookingForm';
 import ConflictAlert from '../components/booking/ConflictAlert';
 import { MOCK_EQUIPMENT, MOCK_PROJECTS } from '../data/mockData';
-import { bookingsAPI, equipmentAPI, projectsAPI, schedulingAPI } from '../services/api';
+import { bookingsAPI, equipmentAPI, projectsAPI, normalizeAlternative } from '../services/api';
 import { AlternativeSlot, Equipment, Project } from '../types';
 import toast from 'react-hot-toast';
+import { format } from 'date-fns';
 import { useAppStore } from '../store/appStore';
-import { Sparkles, CheckCircle2 } from 'lucide-react';
 
 export default function SmartBooking() {
   const { state, dispatch } = useAppStore();
@@ -16,6 +16,7 @@ export default function SmartBooking() {
   const [projectsList, setProjectsList] = useState<Project[]>(MOCK_PROJECTS);
   const [loading, setLoading] = useState(false);
   const [conflictAlternatives, setConflictAlternatives] = useState<AlternativeSlot[] | null>(null);
+  const [conflictMessage, setConflictMessage] = useState<string | undefined>();
 
   useEffect(() => {
     equipmentAPI.getAll().then((res) => {
@@ -27,148 +28,106 @@ export default function SmartBooking() {
     }).catch(() => {});
   }, [currentPersona]);
 
+  const errorMessage = (err: any, fallback: string) =>
+    err?.response?.data?.message ||
+    err?.response?.data?.error ||
+    (err?.code === 'ERR_NETWORK' ? 'Cannot reach the LabLink server. Is the backend running?' : fallback);
+
+  const pushNotification = (title: string, message: string) =>
+    dispatch({
+      type: 'ADD_NOTIFICATION',
+      payload: {
+        id: `local-${Date.now()}`,
+        userId: currentPersona.studentId || 'st-001',
+        userType: 'student',
+        title,
+        message,
+        type: 'success',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+  const createBooking = async (payload: Record<string, unknown>, equipmentName: string) => {
+    const res = await bookingsAPI.create(payload);
+    const needsApproval = Boolean(res.data?.requires_approval);
+    toast.success(
+      needsApproval
+        ? `Request for ${equipmentName} sent for faculty approval`
+        : `${equipmentName} reserved — you're all set!`
+    );
+    pushNotification(
+      needsApproval ? 'Booking submitted — pending approval' : 'Booking confirmed',
+      `${equipmentName} has been added to My Requests.`
+    );
+    dispatch({ type: 'SET_PAGE', payload: 'requests' });
+  };
+
   const handleBookingSubmit = async (formData: any) => {
     setLoading(true);
     setConflictAlternatives(null);
+    setConflictMessage(undefined);
 
-    // Calculate dates from timeSlot string (e.g., '10:00 - 12:00')
+    // timeSlot looks like '10:00 - 12:00'
     const [startHourStr, endHourStr] = formData.timeSlot.split(' - ');
-    const [startH] = startHourStr.split(':');
-    const [endH] = endHourStr.split(':');
-
     const startTime = new Date(formData.date);
-    startTime.setHours(parseInt(startH, 10), 0, 0, 0);
-
+    startTime.setHours(parseInt(startHourStr, 10), 0, 0, 0);
     const endTime = new Date(formData.date);
-    endTime.setHours(parseInt(endH, 10), 0, 0, 0);
+    endTime.setHours(parseInt(endHourStr, 10), 0, 0, 0);
 
-    const bookingPayload = {
-      equipmentId: formData.equipmentId,
-      studentId: currentPersona.studentId || 'st-001',
-      projectId: formData.projectId || undefined,
-      startTime: startTime.toISOString(),
-      endTime: endTime.toISOString(),
-      purpose: formData.purpose,
-      priority: formData.priority,
-    };
+    const studentId = currentPersona.studentId || 'st-001';
+    const equipmentName =
+      equipmentList.find((e) => e.id === formData.equipmentId)?.name || 'Equipment';
 
     try {
-      await bookingsAPI.create(bookingPayload);
-      toast.success('Equipment reservation confirmed successfully!');
-      dispatch({ type: 'SET_PAGE', payload: 'requests' });
+      await createBooking(
+        {
+          equipmentId: formData.equipmentId,
+          studentId,
+          projectId: formData.projectId || undefined,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          purpose: formData.purpose,
+          priority: formData.priority,
+        },
+        equipmentName
+      );
     } catch (err: any) {
-      // Check if 409 conflict
-      if (err.response && err.response.status === 409) {
-        toast.error('Scheduling conflict detected with existing reservation.');
-        // If the backend returns alternatives in the 409 response
-        if (err.response.data && err.response.data.alternatives) {
-          setConflictAlternatives(err.response.data.alternatives);
+      if (err.response?.status === 409) {
+        const alts = (err.response.data?.alternatives ?? []).map(normalizeAlternative);
+        toast.error('Scheduling conflict detected with an existing reservation.');
+        setConflictMessage(
+          `${equipmentName} is already booked between ${format(startTime, 'EEE, MMM d · h:mm a')} and ${format(endTime, 'h:mm a')}.`
+        );
+        if (alts.length > 0) {
+          setConflictAlternatives(alts);
         } else {
-          // Fetch recommendations from scheduling engine
-          fetchAlternatives(formData, startTime);
+          toast.error(errorMessage(err, 'No alternative slots available.'));
         }
       } else {
-        // Fallback simulation of smart conflict resolution
-        fetchAlternatives(formData, startTime);
+        // Validation / server / network problem: show the real reason, never fake a success.
+        toast.error(errorMessage(err, 'Could not create the reservation.'));
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchAlternatives = async (formData: any, startTime: Date) => {
-    try {
-      const res = await schedulingAPI.recommend({
-        studentId: currentPersona.studentId || 'st-001',
-        equipmentId: formData.equipmentId,
-        preferredStartTime: startTime.toISOString(),
-        duration: 120,
-        projectId: formData.projectId,
-        priority: formData.priority,
-      });
-
-      if (res.data && res.data.alternatives && res.data.alternatives.length > 0) {
-        setConflictAlternatives(res.data.alternatives);
-      } else {
-        generateMockAlternatives(formData.equipmentId, startTime);
-      }
-    } catch {
-      generateMockAlternatives(formData.equipmentId, startTime);
-    }
-  };
-
-  const generateMockAlternatives = (equipmentId: string, startTime: Date) => {
-    const eq = equipmentList.find((e) => e.id === equipmentId) || equipmentList[0];
-    const altEq = equipmentList.find((e) => e.category === eq.category && e.id !== eq.id) || equipmentList[1];
-
-    const alts: AlternativeSlot[] = [
-      {
-        equipmentId: eq.id,
-        equipmentName: eq.name,
-        startTime: new Date(startTime.getTime() + 4 * 3600000).toISOString(),
-        endTime: new Date(startTime.getTime() + 6 * 3600000).toISOString(),
-        score: 96,
-        reasons: ['Same target equipment', 'Zero lab change needed', 'Off-peak window'],
-        tradeoffs: ['4 hours later than preferred start'],
-        scoreBreakdown: {
-          timeCompatibility: 92,
-          equipmentMatch: 100,
-          labProximity: 98,
-          historicalSuccess: 95,
-          loadBalance: 95,
-        },
-      },
-      {
-        equipmentId: altEq.id,
-        equipmentName: altEq.name,
-        startTime: startTime.toISOString(),
-        endTime: new Date(startTime.getTime() + 2 * 3600000).toISOString(),
-        score: 91,
-        reasons: ['Exact requested time slot preserved', 'Compatible specs for compute'],
-        tradeoffs: ['Located in secondary engineering wing'],
-        scoreBreakdown: {
-          timeCompatibility: 100,
-          equipmentMatch: 88,
-          labProximity: 80,
-          historicalSuccess: 92,
-          loadBalance: 96,
-        },
-      },
-      {
-        equipmentId: eq.id,
-        equipmentName: eq.name,
-        startTime: new Date(startTime.getTime() + 24 * 3600000).toISOString(),
-        endTime: new Date(startTime.getTime() + 26 * 3600000).toISOString(),
-        score: 85,
-        reasons: ['Guaranteed dedicated uninterrupted session', 'Full staff support available'],
-        tradeoffs: ['Next-day morning session'],
-        scoreBreakdown: {
-          timeCompatibility: 80,
-          equipmentMatch: 100,
-          labProximity: 98,
-          historicalSuccess: 90,
-          loadBalance: 60,
-        },
-      },
-    ];
-    setConflictAlternatives(alts);
-  };
-
   const handleAcceptAlternative = async (alt: AlternativeSlot) => {
     try {
-      await bookingsAPI.create({
-        equipmentId: alt.equipmentId,
-        studentId: currentPersona.studentId || 'st-001',
-        startTime: alt.startTime,
-        endTime: alt.endTime,
-        purpose: 'Alternative recommendation accepted via Smart Booking',
-        priority: 'high',
-      });
-      toast.success(`Reserved alternative on ${alt.equipmentName}!`);
-      dispatch({ type: 'SET_PAGE', payload: 'requests' });
-    } catch {
-      toast.success(`Reserved alternative on ${alt.equipmentName}!`);
-      dispatch({ type: 'SET_PAGE', payload: 'requests' });
+      await createBooking(
+        {
+          equipmentId: alt.equipmentId,
+          studentId: currentPersona.studentId || 'st-001',
+          startTime: alt.startTime,
+          endTime: alt.endTime,
+          purpose: 'Alternative recommendation accepted via Smart Booking',
+          priority: 'normal',
+        },
+        alt.equipmentName
+      );
+    } catch (err: any) {
+      toast.error(errorMessage(err, 'That alternative is no longer available.'));
     }
   };
 
@@ -188,6 +147,7 @@ export default function SmartBooking() {
 
       {conflictAlternatives && (
         <ConflictAlert
+          message={conflictMessage}
           alternatives={conflictAlternatives}
           onAcceptAlternative={handleAcceptAlternative}
           onDismiss={() => setConflictAlternatives(null)}

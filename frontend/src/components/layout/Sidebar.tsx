@@ -59,34 +59,34 @@ export default function Sidebar() {
       {sidebarOpen && (
         <div
           onClick={() => dispatch({ type: 'SET_SIDEBAR', payload: false })}
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 md:hidden"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 md:hidden"
         />
       )}
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 w-64 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 text-slate-300 flex flex-col justify-between transition-transform duration-300 ease-in-out border-r border-indigo-900/40 shadow-2xl ${
+        className={`fixed top-0 bottom-0 left-0 z-40 w-64 bg-[#070708]/95 backdrop-blur-xl text-neutral-400 flex flex-col justify-between transition-transform duration-300 ease-in-out border-r border-orange-500/25 shadow-[8px_0_40px_-12px_rgba(255,106,0,0.35)] ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
         <div>
           {/* Logo Area */}
-          <div className="p-5 flex items-center justify-between border-b border-white/10">
+          <div className="p-5 flex items-center justify-between border-b border-orange-500/20">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-violet-500 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-black shadow-[0_0_22px_rgba(255,106,0,0.7)] animate-glow-pulse">
                 <Sparkles size={20} className="animate-pulse" />
               </div>
               <div>
-                <h1 className="font-extrabold text-white text-lg tracking-tight flex items-center gap-1.5">
-                  LabLink <span className="text-[10px] bg-violet-500/20 text-violet-300 border border-violet-400/30 px-1.5 py-0.5 rounded-full uppercase tracking-wider font-semibold">AI 2.0</span>
+                <h1 className="font-display font-extrabold text-white text-lg flex items-center gap-1.5">
+                  LabLink <span className="text-[10px] bg-orange-500/15 text-orange-300 border border-orange-400/40 px-1.5 py-0.5 rounded uppercase tracking-wider font-mono font-semibold">GenAI</span>
                 </h1>
-                <p className="text-[11px] text-slate-400 font-medium">Campus Resource Grid</p>
+                <p className="text-[10px] text-orange-300/70 font-mono uppercase tracking-[0.18em]">Campus Resource Grid</p>
               </div>
             </div>
 
             <button
               onClick={() => dispatch({ type: 'SET_SIDEBAR', payload: false })}
-              className="p-1 rounded-lg text-slate-400 hover:text-white md:hidden"
+              className="p-1 rounded-lg text-neutral-400 hover:text-white md:hidden"
             >
               <X size={20} />
             </button>
@@ -110,25 +110,25 @@ export default function Sidebar() {
                   }}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all group ${
                     isActive
-                      ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-600/30 font-semibold'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      ? 'bg-gradient-to-r from-orange-500/25 to-transparent text-white border border-orange-500/50 shadow-[0_0_22px_-4px_rgba(255,106,0,0.55)] font-semibold'
+                      : 'text-neutral-400 border border-transparent hover:text-white hover:bg-orange-500/10 hover:border-orange-500/20'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon
                       size={18}
-                      className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-indigo-400 transition-colors'}
+                      className={isActive ? 'text-orange-400 drop-shadow-[0_0_6px_rgba(255,106,0,0.9)]' : 'text-neutral-500 group-hover:text-orange-400 transition-colors'}
                     />
                     <span>{item.label}</span>
                   </div>
 
                   <div className="flex items-center gap-1.5">
                     {item.badge && (
-                      <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-amber-500 text-slate-950 shadow-sm animate-bounce">
+                      <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-orange-500 text-black shadow-[0_0_12px_rgba(255,106,0,0.8)] animate-bounce">
                         {item.badge}
                       </span>
                     )}
-                    {isActive && <ChevronRight size={14} className="text-white/60" />}
+                    {isActive && <ChevronRight size={14} className="text-orange-400" />}
                   </div>
                 </button>
               );
@@ -137,22 +137,22 @@ export default function Sidebar() {
         </div>
 
         {/* Footer: User & Campus Status */}
-        <div className="p-4 border-t border-white/10 bg-black/20">
+        <div className="p-4 border-t border-orange-500/20 bg-black/40">
           <div className="flex items-center gap-2 mb-3 px-1">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="text-[11px] font-medium text-emerald-400 tracking-wide">
+            <span className="text-[10px] font-mono uppercase text-emerald-400 tracking-[0.15em]">
               Campus Grid: 99.8% Online
             </span>
           </div>
 
-          <div className="flex items-center gap-3 p-2 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <div className="flex items-center gap-3 p-2 rounded-xl bg-orange-500/5 border border-orange-500/15 hover:border-orange-500/40 transition-colors">
             <Avatar initials={currentPersona.avatar} size="md" />
             <div className="overflow-hidden flex-1">
               <p className="text-xs font-semibold text-white truncate">{currentPersona.name}</p>
-              <p className="text-[10px] text-slate-400 truncate capitalize">{currentPersona.role} • {currentPersona.department}</p>
+              <p className="text-[10px] text-neutral-500 truncate capitalize">{currentPersona.role} • {currentPersona.department}</p>
             </div>
           </div>
         </div>

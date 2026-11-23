@@ -14,30 +14,28 @@ export default function FacultyApprovals() {
   const { state } = useAppStore();
   const { currentPersona } = state;
 
-  const [requests, setRequests] = useState<LabRequest[]>(MOCK_REQUESTS);
+  const [requests, setRequests] = useState<LabRequest[]>([]);
   const [selectedReq, setSelectedReq] = useState<LabRequest | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [activeReqId, setActiveReqId] = useState<string | null>(null);
 
+  const loadRequests = () =>
+    requestsAPI.getAll()
+      .then((res) => setRequests(res.data))
+      .catch(() => setRequests(MOCK_REQUESTS));
+
   useEffect(() => {
-    requestsAPI.getAll().then((res) => {
-      if (res.data && res.data.length > 0) setRequests(res.data);
-    }).catch(() => {});
+    loadRequests();
   }, []);
 
   const handleApprove = async (id: string) => {
     try {
       await requestsAPI.approve(id, 'Approved by faculty reviewer.');
-      toast.success('Request approved successfully');
-      setRequests((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, status: 'approved' } : r))
-      );
-    } catch {
-      toast.success('Request approved successfully');
-      setRequests((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, status: 'approved' } : r))
-      );
+      toast.success('Request approved — student has been notified');
+      loadRequests();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'Could not approve this request');
     }
   };
 
@@ -45,15 +43,10 @@ export default function FacultyApprovals() {
     if (!activeReqId) return;
     try {
       await requestsAPI.reject(activeReqId, rejectReason || 'Schedule conflict with lab course');
-      toast.success('Request rejected with reason');
-      setRequests((prev) =>
-        prev.map((r) => (r.id === activeReqId ? { ...r, status: 'rejected' } : r))
-      );
-    } catch {
-      toast.success('Request rejected');
-      setRequests((prev) =>
-        prev.map((r) => (r.id === activeReqId ? { ...r, status: 'rejected' } : r))
-      );
+      toast.success('Request rejected — student has been notified');
+      loadRequests();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'Could not reject this request');
     } finally {
       setRejectModalOpen(false);
       setRejectReason('');
@@ -98,28 +91,30 @@ export default function FacultyApprovals() {
                 className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4"
               >
                 <div className="flex items-start gap-3.5">
-                  <Avatar initials="AM" size="md" />
+                  <Avatar initials={(req.studentName || 'Student').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()} size="md" />
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-sm text-slate-800">Alex Morgan</h4>
-                      <span className="text-[11px] text-slate-400">CS Senior • st-001</span>
+                      <h4 className="font-bold text-sm text-slate-800">{req.studentName || 'Student'}</h4>
+                      <span className="text-[11px] text-slate-400">{req.studentDepartment || 'Campus'}</span>
                     </div>
 
                     <p className="text-xs font-semibold text-indigo-600 mt-0.5">
-                      Requested: {req.booking?.equipmentName || 'NVIDIA DGX A100 Workstation'}
+                      Requested: {req.booking?.equipmentName || 'Lab equipment'}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2">
                       <span className="flex items-center gap-1">
                         <Calendar size={12} className="text-slate-400" />
-                        Tomorrow, 10:00 AM – 2:00 PM
+                        {req.startTime && req.endTime
+                          ? `${format(new Date(req.startTime), 'EEE, MMM d')}, ${format(new Date(req.startTime), 'h:mm a')} – ${format(new Date(req.endTime), 'h:mm a')}`
+                          : 'Time not specified'}
                       </span>
                       <span>•</span>
-                      <span>Priority: High</span>
+                      <span className="capitalize">Priority: {req.priority || 'normal'}</span>
                     </div>
 
                     <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl mt-2 max-w-xl">
-                      "{req.booking?.purpose || 'Model training for thesis project on neural architecture search'}"
+                      "{req.booking?.purpose || 'No purpose provided'}"
                     </p>
                   </div>
                 </div>
@@ -167,15 +162,15 @@ export default function FacultyApprovals() {
             <tbody className="divide-y divide-slate-100">
               {recentDecisions.map((r) => (
                 <tr key={r.id} className="hover:bg-slate-50 transition">
-                  <td className="py-3 px-4 font-semibold text-slate-800">Alex Morgan</td>
+                  <td className="py-3 px-4 font-semibold text-slate-800">{r.studentName || 'Student'}</td>
                   <td className="py-3 px-4 text-slate-600">
-                    {r.booking?.equipmentName || 'DGX A100 Workstation'}
+                    {r.booking?.equipmentName || 'Lab equipment'}
                   </td>
                   <td className="py-3 px-4">
                     <StatusBadge status={r.status} />
                   </td>
                   <td className="py-3 px-4 text-slate-600">
-                    {r.notes || 'Approved for research work.'}
+                    {r.notes || '—'}
                   </td>
                   <td className="py-3 px-4 text-right text-slate-400">
                     {format(new Date(r.updatedAt || Date.now()), 'MMM d, yyyy')}

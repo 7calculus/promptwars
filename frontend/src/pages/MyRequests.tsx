@@ -23,24 +23,34 @@ export default function MyRequests() {
   const { state } = useAppStore();
   const { currentPersona } = state;
 
-  const [bookings, setBookings] = useState<Booking[]>(MOCK_BOOKINGS);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>('all');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   const fetchBookings = async () => {
     try {
-      const res = await bookingsAPI.getAll();
-      if (res.data && res.data.length > 0) {
-        setBookings(res.data);
+      // Students see their own bookings; faculty/admin see everything
+      const filters: Record<string, string> = {};
+      if (currentPersona.role === 'student' && currentPersona.studentId) {
+        filters.studentId = currentPersona.studentId;
       }
+      const res = await bookingsAPI.getAll(filters);
+      setBookings(res.data);
     } catch {
-      // Keep mock
+      // Backend unreachable: fall back to demo data only for a student
+      setBookings(MOCK_BOOKINGS);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchBookings();
-  }, []);
+    // Keep the list fresh if a request is approved in another tab / by faculty
+    const t = setInterval(fetchBookings, 15000);
+    return () => clearInterval(t);
+  }, [currentPersona]);
 
   const handleCancelBooking = async (id: string) => {
     try {
@@ -49,14 +59,9 @@ export default function MyRequests() {
       setBookings((prev) =>
         prev.map((b) => (b.id === id ? { ...b, status: 'cancelled' as BookingStatus } : b))
       );
-      if (selectedBooking?.id === id) {
-        setSelectedBooking((prev) => (prev ? { ...prev, status: 'cancelled' } : null));
-      }
-    } catch {
-      toast.success('Reservation cancelled');
-      setBookings((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, status: 'cancelled' as BookingStatus } : b))
-      );
+      setSelectedBooking((prev) => (prev?.id === id ? { ...prev, status: 'cancelled' } : prev));
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || 'Could not cancel this reservation');
     }
   };
 
@@ -98,7 +103,9 @@ export default function MyRequests() {
       </div>
 
       {/* Table / List */}
-      {filteredBookings.length === 0 ? (
+      {loading ? (
+        <div className="text-center text-xs text-slate-400 py-16">Loading your reservations…</div>
+      ) : filteredBookings.length === 0 ? (
         <EmptyState
           title={`No ${activeTab !== 'all' ? activeTab : ''} bookings found`}
           description="You don't have any laboratory equipment requests matching this filter criteria."
@@ -147,7 +154,7 @@ export default function MyRequests() {
                       <StatusBadge status={b.status} />
                     </td>
                     <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                      {b.status === 'pending' && (
+                      {(b.status === 'pending' || b.status === 'approved') && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -217,13 +224,13 @@ export default function MyRequests() {
               </div>
             )}
 
-            {selectedBooking.status === 'pending' && (
+            {(selectedBooking.status === 'pending' || selectedBooking.status === 'approved') && (
               <div className="pt-3 border-t border-slate-100 flex justify-end">
                 <button
                   onClick={() => handleCancelBooking(selectedBooking.id)}
                   className="px-4 py-2 rounded-xl text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition"
                 >
-                  Cancel Reservation Request
+                  Cancel Reservation
                 </button>
               </div>
             )}

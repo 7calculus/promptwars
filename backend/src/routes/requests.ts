@@ -21,12 +21,12 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
   const { status, facultyId } = req.query as Record<string, string>;
 
   let sql = `
-    SELECT r.*, b.equipment_id, b.student_id, b.start_time, b.end_time, b.purpose,
-           e.name as equipment_name, s.name as student_name, f.name as faculty_name
+    SELECT r.*, b.equipment_id, b.student_id, b.start_time, b.end_time, b.purpose, b.priority, b.status as booking_status,
+           e.name as equipment_name, s.name as student_name, s.department as student_department, f.name as faculty_name
     FROM requests r
     JOIN bookings b ON r.booking_id = b.id
     JOIN equipment e ON b.equipment_id = e.id
-    JOIN students s ON b.student_id = s.id
+    LEFT JOIN students s ON b.student_id = s.id
     LEFT JOIN faculty f ON r.faculty_id = f.id
     WHERE 1=1
   `;
@@ -44,7 +44,9 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
     facultyId: r.faculty_id,
     facultyName: r.faculty_name,
     studentName: r.student_name,
+    studentDepartment: r.student_department,
     studentId: r.student_id,
+    priority: r.priority,
     equipmentName: r.equipment_name,
     equipmentId: r.equipment_id,
     startTime: r.start_time,
@@ -61,7 +63,8 @@ router.get('/', asyncHandler(async (req: Request, res: Response) => {
       startTime: r.start_time,
       endTime: r.end_time,
       purpose: r.purpose,
-      status: r.status,
+      priority: r.priority,
+      status: r.booking_status,
     },
   }));
   res.json({ requests, total: requests.length });

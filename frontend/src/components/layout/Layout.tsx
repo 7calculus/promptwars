@@ -8,7 +8,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen flex">
       {/* Sidebar (Desktop 260px / Collapsible) */}
       <Sidebar />
 

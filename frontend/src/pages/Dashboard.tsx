@@ -41,7 +41,13 @@ export default function Dashboard() {
     }
     bookingsAPI.getAll(filters).then((res) => {
       setRecentBookings(res.data.slice(0, 5));
-    }).catch(() => {});
+    }).catch(() => {
+      setRecentBookings(
+        state.demoBookings
+          .filter((b) => currentPersona.role !== 'student' || b.studentId === currentPersona.studentId)
+          .slice(0, 5)
+      );
+    });
 
     equipmentAPI.getAll().then((res) => {
       if (res.data && res.data.length > 0) {

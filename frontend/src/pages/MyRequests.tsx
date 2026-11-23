@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MOCK_BOOKINGS } from '../data/mockData';
-import { bookingsAPI } from '../services/api';
+import { bookingsAPI, isNetworkError } from '../services/api';
 import { Booking, BookingStatus } from '../types';
 import StatusBadge from '../components/common/StatusBadge';
 import Modal from '../components/common/Modal';
@@ -20,11 +20,17 @@ const TABS: { id: string; label: string }[] = [
 ];
 
 export default function MyRequests() {
-  const { state } = useAppStore();
+  const { state, dispatch } = useAppStore();
   const { currentPersona } = state;
 
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  // null = no server data (use local demo bookings from the store)
+  const [apiBookings, setApiBookings] = useState<Booking[] | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const demoBookings = state.demoBookings.filter(
+    (b) => currentPersona.role !== 'student' || b.studentId === currentPersona.studentId
+  );
+  const bookings: Booking[] = apiBookings ?? demoBookings;
   const [activeTab, setActiveTab] = useState<string>('all');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
@@ -36,10 +42,10 @@ export default function MyRequests() {
         filters.studentId = currentPersona.studentId;
       }
       const res = await bookingsAPI.getAll(filters);
-      setBookings(res.data);
+      setApiBookings(res.data);
     } catch {
-      // Backend unreachable: fall back to demo data only for a student
-      setBookings(MOCK_BOOKINGS);
+      // Backend unreachable: use the local demo bookings
+      setApiBookings(null);
     } finally {
       setLoading(false);
     }
@@ -50,19 +56,25 @@ export default function MyRequests() {
     // Keep the list fresh if a request is approved in another tab / by faculty
     const t = setInterval(fetchBookings, 15000);
     return () => clearInterval(t);
-  }, [currentPersona]);
+  }, [currentPersona, state.offline]);
 
   const handleCancelBooking = async (id: string) => {
     try {
       await bookingsAPI.cancel(id);
       toast.success('Reservation cancelled');
-      setBookings((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, status: 'cancelled' as BookingStatus } : b))
+      setApiBookings((prev) =>
+        prev ? prev.map((b) => (b.id === id ? { ...b, status: 'cancelled' as BookingStatus } : b)) : prev
       );
-      setSelectedBooking((prev) => (prev?.id === id ? { ...prev, status: 'cancelled' } : prev));
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Could not cancel this reservation');
+      if (isNetworkError(err)) {
+        dispatch({ type: 'CANCEL_DEMO_BOOKING', payload: id });
+        toast.success('Reservation cancelled (demo mode)');
+      } else {
+        toast.error(err.response.data?.error || 'Could not cancel this reservation');
+        return;
+      }
     }
+    setSelectedBooking((prev) => (prev?.id === id ? { ...prev, status: 'cancelled' } : prev));
   };
 
   const filteredBookings = bookings.filter((b) => {

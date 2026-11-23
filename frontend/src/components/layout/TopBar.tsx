@@ -75,6 +75,14 @@ export default function TopBar() {
           <span className="text-sm font-bold text-slate-800">
             {currentPersona.name}
           </span>
+          {state.offline && (
+            <span
+              title="The LabLink server can't be reached, so changes are only kept in this browser tab. Start the backend and refresh."
+              className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-1 rounded border border-red-500/60 bg-red-500/10 text-red-300 animate-pulse"
+            >
+              Offline · demo mode
+            </span>
+          )}
         </div>
       </div>
 

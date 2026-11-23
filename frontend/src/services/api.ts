@@ -3,6 +3,30 @@ import type { AlternativeSlot } from '../types';
 
 const api = axios.create({ baseURL: '/api', timeout: 10000 });
 
+/** Lets the app know whether the backend is reachable (drives the OFFLINE chip + demo mode). */
+type ConnectivityListener = (offline: boolean) => void;
+let connectivityListener: ConnectivityListener | null = null;
+export const onConnectivityChange = (cb: ConnectivityListener) => {
+  connectivityListener = cb;
+  return () => { connectivityListener = null; };
+};
+/**
+ * True when the LabLink API itself could not be reached: no response at all, or a
+ * non-JSON reply (e.g. the Vite proxy's empty 500 when the backend is down, or a
+ * static host's HTML 404). Real API errors always come back as JSON.
+ */
+export const isNetworkError = (err: any) => {
+  const res = err?.response;
+  if (!res) return true;
+  const type = String(res.headers?.['content-type'] ?? '');
+  return !type.includes('application/json');
+};
+
+api.interceptors.response.use(
+  (res) => { connectivityListener?.(false); return res; },
+  (err) => { connectivityListener?.(isNetworkError(err)); return Promise.reject(err); }
+);
+
 /**
  * The backend returns alternatives in snake_case with a 0–1 score and a
  * `metadata` block. The UI works with camelCase, a 0–100 score and a

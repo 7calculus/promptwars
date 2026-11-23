@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import BookingForm from '../components/booking/BookingForm';
 import ConflictAlert from '../components/booking/ConflictAlert';
 import { MOCK_EQUIPMENT, MOCK_PROJECTS } from '../data/mockData';
-import { bookingsAPI, equipmentAPI, projectsAPI, normalizeAlternative } from '../services/api';
-import { AlternativeSlot, Equipment, Project } from '../types';
+import { bookingsAPI, equipmentAPI, projectsAPI, normalizeAlternative, isNetworkError } from '../services/api';
+import { AlternativeSlot, Booking, Equipment, LabRequest, Project } from '../types';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { useAppStore } from '../store/appStore';
@@ -63,6 +63,65 @@ export default function SmartBooking() {
     dispatch({ type: 'SET_PAGE', payload: 'requests' });
   };
 
+  /** Backend unreachable: keep the whole flow working locally so the demo still makes sense. */
+  const createDemoBooking = (formData: any, startTime: Date, endTime: Date, equipmentName: string) => {
+    const equipment = equipmentList.find((e) => e.id === formData.equipmentId);
+    const studentId = currentPersona.studentId || 'st-001';
+    const overlaps = state.demoBookings.some(
+      (b) =>
+        b.equipmentId === formData.equipmentId &&
+        (b.status === 'pending' || b.status === 'approved') &&
+        new Date(b.startTime) < endTime &&
+        new Date(b.endTime) > startTime
+    );
+    if (overlaps) {
+      toast.error(`${equipmentName} is already booked for that time. Pick another slot.`);
+      return;
+    }
+    const needsApproval = Boolean(equipment?.requiresApproval);
+    const now = new Date().toISOString();
+    const bookingId = `bk-demo-${Date.now()}`;
+    const project = projectsList.find((p) => p.id === formData.projectId);
+    const booking: Booking = {
+      id: bookingId,
+      equipmentId: formData.equipmentId,
+      equipmentName,
+      studentId,
+      studentName: currentPersona.name,
+      projectId: formData.projectId || undefined,
+      projectTitle: project?.title,
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      status: needsApproval ? 'pending' : 'approved',
+      purpose: formData.purpose,
+      priority: formData.priority,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const request: LabRequest | undefined = needsApproval
+      ? {
+          id: `req-demo-${Date.now()}`,
+          bookingId,
+          booking,
+          status: 'pending',
+          studentName: currentPersona.name,
+          studentDepartment: currentPersona.department,
+          priority: formData.priority,
+          startTime: booking.startTime,
+          endTime: booking.endTime,
+          createdAt: now,
+          updatedAt: now,
+        }
+      : undefined;
+    dispatch({ type: 'ADD_DEMO_BOOKING', payload: { booking, request } });
+    toast.success(
+      needsApproval
+        ? `Request for ${equipmentName} sent for faculty approval (demo mode)`
+        : `${equipmentName} reserved (demo mode)`
+    );
+    dispatch({ type: 'SET_PAGE', payload: 'requests' });
+  };
+
   const handleBookingSubmit = async (formData: any) => {
     setLoading(true);
     setConflictAlternatives(null);
@@ -104,8 +163,11 @@ export default function SmartBooking() {
         } else {
           toast.error(errorMessage(err, 'No alternative slots available.'));
         }
+      } else if (isNetworkError(err)) {
+        toast('Server unreachable — saving in demo mode', { icon: '⚠️' });
+        createDemoBooking(formData, startTime, endTime, equipmentName);
       } else {
-        // Validation / server / network problem: show the real reason, never fake a success.
+        // Validation / server problem: show the real reason, never fake a success.
         toast.error(errorMessage(err, 'Could not create the reservation.'));
       }
     } finally {
@@ -157,6 +219,7 @@ export default function SmartBooking() {
       <BookingForm
         equipmentList={equipmentList}
         projectsList={projectsList}
+        initialEquipmentId={state.selectedEquipmentId ?? undefined}
         onSubmit={handleBookingSubmit}
         isLoading={loading}
       />

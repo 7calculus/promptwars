@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Equipment, Project } from '../../types';
 import BookingCalendar from './BookingCalendar';
 import { Sparkles, Calendar, Clock, AlertCircle } from 'lucide-react';
@@ -34,6 +34,15 @@ export default function BookingForm({
   const [selectedSlot, setSelectedSlot] = useState<string | null>('10:00 - 12:00');
   const [purpose, setPurpose] = useState('');
   const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'critical'>('normal');
+
+  // Keep the selection in sync when the equipment list loads or Explorer pre-selects a machine
+  useEffect(() => {
+    if (initialEquipmentId && equipmentList.some((e) => e.id === initialEquipmentId)) {
+      setEquipmentId(initialEquipmentId);
+    } else if (!equipmentList.some((e) => e.id === equipmentId) && equipmentList[0]) {
+      setEquipmentId(equipmentList[0].id);
+    }
+  }, [initialEquipmentId, equipmentList]);
 
   const selectedEquipment = equipmentList.find((e) => e.id === equipmentId);
 

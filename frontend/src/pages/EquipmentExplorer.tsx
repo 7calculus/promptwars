@@ -56,6 +56,7 @@ export default function EquipmentExplorer() {
     });
 
   const handleBookNow = (equipment: Equipment) => {
+    dispatch({ type: 'SELECT_EQUIPMENT', payload: equipment.id });
     dispatch({ type: 'SET_PAGE', payload: 'booking' });
   };
 

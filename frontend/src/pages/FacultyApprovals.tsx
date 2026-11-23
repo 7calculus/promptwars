@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Check, X, Clock, Calendar, AlertCircle, Sparkles, User, MessageSquare } from 'lucide-react';
-import { MOCK_REQUESTS } from '../data/mockData';
-import { requestsAPI } from '../services/api';
+import { requestsAPI, isNetworkError } from '../services/api';
 import { LabRequest } from '../types';
 import StatusBadge from '../components/common/StatusBadge';
 import Avatar from '../components/common/Avatar';
@@ -11,10 +10,12 @@ import toast from 'react-hot-toast';
 import { useAppStore } from '../store/appStore';
 
 export default function FacultyApprovals() {
-  const { state } = useAppStore();
+  const { state, dispatch } = useAppStore();
   const { currentPersona } = state;
 
-  const [requests, setRequests] = useState<LabRequest[]>([]);
+  // null = no server data (use local demo requests from the store)
+  const [apiRequests, setApiRequests] = useState<LabRequest[] | null>(null);
+  const requests: LabRequest[] = apiRequests ?? state.demoRequests;
   const [selectedReq, setSelectedReq] = useState<LabRequest | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -22,8 +23,8 @@ export default function FacultyApprovals() {
 
   const loadRequests = () =>
     requestsAPI.getAll()
-      .then((res) => setRequests(res.data))
-      .catch(() => setRequests(MOCK_REQUESTS));
+      .then((res) => setApiRequests(res.data))
+      .catch(() => setApiRequests(null));
 
   useEffect(() => {
     loadRequests();
@@ -32,30 +33,55 @@ export default function FacultyApprovals() {
   const handleApprove = async (id: string) => {
     try {
       await requestsAPI.approve(id, 'Approved by faculty reviewer.');
-      toast.success('Request approved — student has been notified');
-      loadRequests();
+      toast.success('Request approved — moved to decision history');
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Could not approve this request');
+      if (isNetworkError(err)) {
+        dispatch({
+          type: 'DECIDE_DEMO_REQUEST',
+          payload: { id, status: 'approved', notes: 'Approved by faculty reviewer.', facultyName: currentPersona.name },
+        });
+        toast.success('Request approved (demo mode) — moved to decision history');
+      } else {
+        toast.error(err?.response?.data?.error || 'Could not approve this request');
+      }
     }
+    loadRequests();
   };
 
   const handleReject = async () => {
     if (!activeReqId) return;
+    const id = activeReqId;
+    const reason = rejectReason || 'Schedule conflict with lab course';
     try {
-      await requestsAPI.reject(activeReqId, rejectReason || 'Schedule conflict with lab course');
-      toast.success('Request rejected — student has been notified');
-      loadRequests();
+      await requestsAPI.reject(id, reason);
+      toast.success('Request rejected — moved to decision history');
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Could not reject this request');
+      if (isNetworkError(err)) {
+        dispatch({
+          type: 'DECIDE_DEMO_REQUEST',
+          payload: { id, status: 'rejected', notes: reason, facultyName: currentPersona.name },
+        });
+        toast.success('Request rejected (demo mode) — moved to decision history');
+      } else {
+        toast.error(err?.response?.data?.error || 'Could not reject this request');
+      }
     } finally {
       setRejectModalOpen(false);
       setRejectReason('');
       setActiveReqId(null);
     }
+    loadRequests();
   };
 
+  const who = (r: LabRequest) => r.studentName || r.booking?.studentName || 'Student';
+  const startOf = (r: LabRequest) => r.startTime || r.booking?.startTime;
+  const endOf = (r: LabRequest) => r.endTime || r.booking?.endTime;
+  const priorityOf = (r: LabRequest) => r.priority || r.booking?.priority || 'normal';
+
   const pendingRequests = requests.filter((r) => r.status === 'pending');
-  const recentDecisions = requests.filter((r) => r.status !== 'pending');
+  const recentDecisions = requests
+    .filter((r) => r.status !== 'pending')
+    .sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
 
   return (
     <div className="space-y-6">
@@ -91,10 +117,10 @@ export default function FacultyApprovals() {
                 className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4"
               >
                 <div className="flex items-start gap-3.5">
-                  <Avatar initials={(req.studentName || 'Student').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()} size="md" />
+                  <Avatar initials={(who(req)).split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()} size="md" />
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-sm text-slate-800">{req.studentName || 'Student'}</h4>
+                      <h4 className="font-bold text-sm text-slate-800">{who(req)}</h4>
                       <span className="text-[11px] text-slate-400">{req.studentDepartment || 'Campus'}</span>
                     </div>
 
@@ -105,12 +131,12 @@ export default function FacultyApprovals() {
                     <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-2">
                       <span className="flex items-center gap-1">
                         <Calendar size={12} className="text-slate-400" />
-                        {req.startTime && req.endTime
-                          ? `${format(new Date(req.startTime), 'EEE, MMM d')}, ${format(new Date(req.startTime), 'h:mm a')} – ${format(new Date(req.endTime), 'h:mm a')}`
+                        {startOf(req) && endOf(req)
+                          ? `${format(new Date(startOf(req)!), 'EEE, MMM d')}, ${format(new Date(startOf(req)!), 'h:mm a')} – ${format(new Date(endOf(req)!), 'h:mm a')}`
                           : 'Time not specified'}
                       </span>
                       <span>•</span>
-                      <span className="capitalize">Priority: {req.priority || 'normal'}</span>
+                      <span className="capitalize">Priority: {priorityOf(req)}</span>
                     </div>
 
                     <p className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl mt-2 max-w-xl">
@@ -162,7 +188,7 @@ export default function FacultyApprovals() {
             <tbody className="divide-y divide-slate-100">
               {recentDecisions.map((r) => (
                 <tr key={r.id} className="hover:bg-slate-50 transition">
-                  <td className="py-3 px-4 font-semibold text-slate-800">{r.studentName || 'Student'}</td>
+                  <td className="py-3 px-4 font-semibold text-slate-800">{who(r)}</td>
                   <td className="py-3 px-4 text-slate-600">
                     {r.booking?.equipmentName || 'Lab equipment'}
                   </td>

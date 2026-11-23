@@ -9,6 +9,7 @@ export default function AIAssistant() {
   const { dispatch } = useAppStore();
 
   const handleBook = (equipmentId: string) => {
+    dispatch({ type: 'SELECT_EQUIPMENT', payload: equipmentId });
     dispatch({ type: 'SET_PAGE', payload: 'booking' });
   };
 

@@ -43,6 +43,7 @@ export function seedDatabase(): void {
     { id:'eq-018', name:'Velodyne VLP-16 LiDAR', category:'Robotics', department:'Research Dept', lab:'Robotics Lab', description:'16-channel 3D LiDAR sensor for autonomous navigation.', specs:JSON.stringify({Points:'300000/s',Range:'100m'}), status:'available', hourly_rate:10, max_duration:300, requires_approval:1, demand_score:0.80 },
     { id:'eq-019', name:'R&S FPC1000 Spectrum Analyzer', category:'Research', department:'ECE Department', lab:'Research Lab', description:'Portable spectrum analyzer for RF signal analysis.', specs:JSON.stringify({Freq:'5kHz-3GHz',Span:'10Hz-3GHz'}), status:'available', hourly_rate:5, max_duration:360, requires_approval:0, demand_score:0.42 },
     { id:'eq-020', name:'Intel RealSense D455 Camera', category:'AI/ML', department:'CS Department', lab:'AI Lab', description:'Depth and RGB camera for computer vision research.', specs:JSON.stringify({RGB:'1280x720',Depth:'1280x720',Range:'0.6-6m'}), status:'available', hourly_rate:2, max_duration:480, requires_approval:0, demand_score:0.65 },
+    { id:'eq-021', name:'CNC Milling Machine (Haas Mini Mill)', category:'Mechanical', department:'Mech Department', lab:'Machine Shop', description:'CNC vertical machining center for precision metal and plastic parts.', specs:JSON.stringify({Travel:'406x356x356mm',Spindle:'15000RPM',ToolChanger:'10 tools'}), status:'available', hourly_rate:30, max_duration:360, requires_approval:1, demand_score:0.67 },
   ];
 
   for (const eq of equipmentData) {

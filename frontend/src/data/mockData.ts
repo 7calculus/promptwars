@@ -149,7 +149,7 @@ export const MOCK_EQUIPMENT: Equipment[] = [
     tags: ['Digital', 'Debug', 'Protocol Analysis'],
   },
   {
-    id: 'eq-010',
+    id: 'eq-021',
     name: 'CNC Milling Machine (Haas Mini Mill)',
     category: 'Mechanical',
     department: 'Mechanical Engineering',
